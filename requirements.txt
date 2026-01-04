@@ -1,0 +1,13 @@
+# Pacificia Dependencies
+
+# Terminal UI and formatting
+rich>=13.7.0
+
+# HTTP requests for API calls
+requests>=2.31.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# ASCII art for beautiful banners
+pyfiglet>=1.0.2
