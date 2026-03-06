@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacificia</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0a0a0a;
+  --fg:      #c8c8c8;
+  --fg-dim:  #555;
+  --fg-mid:  #888;
+  --green:   #4af09a;
+  --green-d: #2a8c60;
+  --amber:   #e8a030;
+  --red:     #e05050;
+  --border:  #1e1e1e;
+  --font:    'IBM Plex Mono', 'Courier New', monospace;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 13px; line-height: 1.5; overflow: hidden; }
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 3px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+}
+
+.screen { position: relative; z-index: 1; }
+
+/* mood only visible for pacificia */
+.tb-mood { transition: opacity 0.2s; }
+.tb-mood.hidden { opacity: 0; pointer-events: none; width: 0; padding: 0; border: none; overflow: hidden; }
+
+.screen { display: none; height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ── BOOT ── */
+#screen-boot { align-items: center; justify-content: center; gap: 0; padding: 0 20px; }
+
+.boot-pre {
+  color: var(--green);
+  font-size: 11px;
+  line-height: 1.15;
+  white-space: pre;
+  margin-bottom: 32px;
+  text-shadow: 0 0 10px rgba(74,240,154,0.4);
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { text-shadow: 0 0 10px rgba(74,240,154,0.35); }
+  50%       { text-shadow: 0 0 22px rgba(74,240,154,0.75), 0 0 44px rgba(74,240,154,0.18); }
+}
+
+.boot-form {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+}
+
+.boot-row { display: flex; align-items: center; border-bottom: 1px solid var(--border); }
+.boot-row:last-child { border-bottom: none; }
+
+.boot-label {
+  color: var(--fg-dim);
+  padding: 11px 14px;
+  white-space: nowrap;
+  border-right: 1px solid var(--border);
+  min-width: 80px;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.boot-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 13px;
+  padding: 11px 14px;
+  caret-color: var(--green);
+}
+.boot-input::placeholder { color: var(--fg-dim); }
+
+/* model grid — 3 columns, 2 rows */
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--border);
+}
+
+.model-opt {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--fg-dim);
+  font-family: var(--font);
+  font-size: 11px;
+  padding: 9px 6px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* remove right border on 3rd col, bottom border on last row */
+.model-opt:nth-child(3n) { border-right: none; }
+.model-opt:nth-child(n+4) { border-bottom: none; }
+.model-opt:hover { color: var(--fg-mid); background: rgba(255,255,255,0.02); }
+.model-opt.sel { color: var(--green); background: rgba(74,240,154,0.05); }
+
+.boot-submit {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--green-d);
+  font-family: var(--font);
+  font-size: 11px;
+  letter-spacing: 4px;
+  padding: 12px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  text-transform: uppercase;
+}
+.boot-submit:hover { color: var(--green); background: rgba(74,240,154,0.04); }
+
+.boot-hint { margin-top: 14px; color: var(--fg-dim); font-size: 11px; text-align: center; }
+.boot-hint a { color: var(--fg-mid); text-decoration: none; }
+.boot-hint a:hover { color: var(--fg); }
+
+/* ── MAIN ── */
+#screen-main { flex-direction: column; }
+
+#titlebar { display: flex; align-items: center; border-bottom: 1px solid var(--border); height: 36px; flex-shrink: 0; }
+
+.tb-persona { color: var(--green); padding: 0 16px; font-size: 13px; border-right: 1px solid var(--border); height: 100%; display: flex; align-items: center; cursor: pointer; position: relative; gap: 6px; user-select: none; }
+.tb-persona:hover { background: rgba(255,255,255,0.02); }
+.arrow { color: var(--fg-dim); font-size: 10px; }
+
+#persona-drop { display: none; position: absolute; top: 100%; left: 0; background: #111; border: 1px solid var(--border); border-top: none; z-index: 100; min-width: 200px; }
+#persona-drop.open { display: block; }
+
+.pd-item { padding: 9px 16px; cursor: pointer; color: var(--fg-dim); font-size: 12px; display: flex; justify-content: space-between; gap: 20px; transition: color 0.1s; }
+.pd-item:hover { color: var(--fg); background: rgba(255,255,255,0.02); }
+.pd-item.active { color: var(--green); }
+.pd-role { color: var(--fg-dim); font-size: 11px; }
+.pd-item.active .pd-role { color: var(--green-d); }
+
+.tb-mood { padding: 0 14px; color: var(--amber); font-size: 11px; letter-spacing: 1px; border-right: 1px solid var(--border); height: 100%; display: flex; align-items: center; cursor: pointer; position: relative; gap: 5px; user-select: none; }
+.tb-mood:hover { background: rgba(255,255,255,0.02); }
+
+#mood-drop { display: none; position: absolute; top: 100%; left: 0; background: #111; border: 1px solid var(--border); border-top: none; z-index: 100; min-width: 140px; }
+#mood-drop.open { display: block; }
+
+.mood-item { padding: 8px 14px; cursor: pointer; color: var(--fg-dim); font-size: 12px; transition: color 0.1s; }
+.mood-item:hover { color: var(--fg); }
+.mood-item.active { color: var(--amber); }
+
+.tb-spacer { flex: 1; }
+
+.tb-btn { height: 100%; padding: 0 14px; background: transparent; border: none; border-left: 1px solid var(--border); color: var(--fg-dim); font-family: var(--font); font-size: 11px; letter-spacing: 1px; cursor: pointer; transition: color 0.1s, background 0.1s; }
+.tb-btn:hover { color: var(--fg); background: rgba(255,255,255,0.02); }
+.tb-btn.danger:hover { color: var(--red); }
+
+#output { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 0; }
+#output::-webkit-scrollbar { width: 3px; }
+#output::-webkit-scrollbar-thumb { background: var(--border); }
+
+.line { display: flex; gap: 10px; padding: 2px 0; animation: appear 0.1s ease; }
+@keyframes appear { from { opacity: 0; } to { opacity: 1; } }
+
+.line-gap { height: 8px; }
+.line .who { color: var(--fg-dim); min-width: 80px; flex-shrink: 0; font-size: 12px; padding-top: 1px; }
+.line.user .who { color: var(--fg-mid); }
+.line .text { color: var(--fg); flex: 1; white-space: pre-wrap; word-break: break-word; }
+.line.user .text { color: #e0e0e0; }
+.line.sys .text { color: var(--fg-dim); font-style: italic; font-size: 12px; }
+.line.sys .who { visibility: hidden; }
+
+.block { border-left: 1px solid var(--border); margin: 4px 0 4px 90px; padding: 4px 14px; }
+.block-row { display: flex; gap: 20px; padding: 3px 0; font-size: 12px; }
+.block-row .bk { color: var(--fg-dim); min-width: 160px; }
+.block-row .bv { color: var(--fg); }
+
+#cursor-line { display: none; gap: 10px; padding: 2px 0; }
+#cursor-line.vis { display: flex; }
+#cursor-line .who { color: var(--fg-dim); min-width: 80px; font-size: 12px; }
+#cursor-line .dots { display: flex; gap: 3px; align-items: center; padding-top: 5px; }
+#cursor-line .dots span { width: 4px; height: 4px; border-radius: 50%; background: var(--fg-dim); animation: blink 1.1s infinite; }
+#cursor-line .dots span:nth-child(2) { animation-delay: .18s; }
+#cursor-line .dots span:nth-child(3) { animation-delay: .36s; }
+@keyframes blink { 0%,80%,100%{opacity:.15} 40%{opacity:.8} }
+
+#inputrow { border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 8px; height: 40px; flex-shrink: 0; }
+#inputrow .prompt { color: var(--green); font-size: 14px; user-select: none; }
+#inputrow input { flex: 1; background: transparent; border: none; outline: none; color: var(--fg); font-family: var(--font); font-size: 13px; caret-color: var(--green); }
+#inputrow input::placeholder { color: var(--fg-dim); }
+#inputrow .char-count { color: var(--fg-dim); font-size: 11px; min-width: 30px; text-align: right; }
+
+/* ── SETTINGS ── */
+#screen-settings { flex-direction: column; }
+
+#settings-bar { border-bottom: 1px solid var(--border); padding: 0 20px; height: 36px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+#settings-bar .s-title { color: var(--fg-mid); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; flex: 1; }
+#settings-bar .s-back { background: transparent; border: none; color: var(--fg-dim); font-family: var(--font); font-size: 12px; cursor: pointer; transition: color 0.1s; }
+#settings-bar .s-back:hover { color: var(--green); }
+
+#settings-body { flex: 1; overflow-y: auto; padding: 20px; }
+#settings-body::-webkit-scrollbar { width: 3px; }
+#settings-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+.s-section { margin-bottom: 28px; }
+.s-section-title { color: var(--fg-dim); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 14px; }
+
+.s-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.03); gap: 20px; }
+.s-row:last-child { border-bottom: none; }
+.s-row-left { flex: 1; min-width: 0; }
+.s-row-label { color: var(--fg); font-size: 13px; }
+.s-row-desc { color: var(--fg-dim); font-size: 11px; margin-top: 1px; }
+
+/* toggle */
+.toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; cursor: pointer; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track { position: absolute; inset: 0; background: var(--border); border: 1px solid #2a2a2a; transition: background 0.2s; }
+.toggle input:checked ~ .toggle-track { background: var(--green-d); border-color: var(--green-d); }
+.toggle-thumb { position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; background: var(--fg-dim); transition: transform 0.2s, background 0.2s; }
+.toggle input:checked ~ .toggle-thumb { transform: translateX(16px); background: var(--green); }
+
+/* tabs */
+.s-tabs { display: flex; border: 1px solid var(--border); flex-wrap: wrap; }
+.s-tab { padding: 5px 11px; background: transparent; border: none; border-right: 1px solid var(--border); color: var(--fg-dim); font-family: var(--font); font-size: 11px; cursor: pointer; transition: color 0.1s, background 0.1s; white-space: nowrap; }
+.s-tab:last-child { border-right: none; }
+.s-tab:hover { color: var(--fg); }
+.s-tab.sel { color: var(--green); background: rgba(74,240,154,0.04); }
+
+/* slider */
+.s-slider-wrap { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+.s-slider { -webkit-appearance: none; appearance: none; flex: 1; height: 2px; background: var(--border); outline: none; cursor: pointer; }
+.s-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 10px; background: var(--fg-mid); cursor: pointer; transition: background 0.1s; }
+.s-slider::-webkit-slider-thumb:hover { background: var(--green); }
+.s-slider-val { color: var(--fg-mid); font-size: 12px; min-width: 28px; text-align: right; }
+
+/* text input in settings */
+.s-input-group { display: flex; align-items: stretch; }
+.s-input { background: transparent; border: 1px solid var(--border); color: var(--fg); font-family: var(--font); font-size: 12px; padding: 6px 10px; outline: none; width: 200px; caret-color: var(--green); transition: border-color 0.15s; }
+.s-input:focus { border-color: var(--fg-dim); }
+.s-input-btn { background: transparent; border: 1px solid var(--border); border-left: none; color: var(--fg-dim); font-family: var(--font); font-size: 11px; padding: 6px 10px; cursor: pointer; transition: color 0.1s; }
+.s-input-btn:hover { color: var(--green); }
+
+/* save bar */
+#settings-save-bar { border-top: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+#settings-save-bar .s-status { color: var(--fg-dim); font-size: 12px; }
+#settings-save-bar .s-status.saved { color: var(--green-d); }
+.s-save-btn { background: transparent; border: 1px solid var(--green-d); color: var(--green-d); font-family: var(--font); font-size: 12px; letter-spacing: 2px; padding: 6px 20px; cursor: pointer; transition: all 0.15s; }
+.s-save-btn:hover { color: var(--green); border-color: var(--green); background: rgba(74,240,154,0.04); }
+
+/* ── CONFIRM ── */
+#confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 500; align-items: center; justify-content: center; }
+#confirm-overlay.open { display: flex; }
+.confirm-box { background: #111; border: 1px solid var(--border); padding: 24px 28px; width: min(320px, 90vw); display: flex; flex-direction: column; gap: 12px; }
+.confirm-box .c-title { color: var(--fg); font-size: 13px; }
+.confirm-box p { color: var(--fg-mid); font-size: 12px; line-height: 1.6; }
+.confirm-btns { display: flex; gap: 8px; }
+.c-btn { flex: 1; padding: 7px; background: transparent; border: 1px solid var(--border); color: var(--fg-dim); font-family: var(--font); font-size: 12px; cursor: pointer; transition: all 0.12s; }
+.c-btn.danger { border-color: var(--red); color: var(--red); }
+.c-btn:not(.danger):hover { color: var(--fg); border-color: var(--fg-dim); }
+.c-btn.danger:hover { background: rgba(224,80,80,0.06); }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<!-- BOOT -->
+<div id="screen-boot" class="screen active">
+  <pre class="boot-pre">
+ ____             _  __ _      _
+|  _ \ __ _  __ _(_)/ _(_) ___(_) __ _
+| |_) / _` |/ _` | | |_| |/ __| |/ _` |
+|  __/ (_| | (_| | |  _| | (__| | (_| |
+|_|   \__,_|\__,_|_|_| |_|\___|_|\__,_|</pre>
+
+  <div class="boot-form">
+    <div class="boot-row">
+      <span class="boot-label">api key</span>
+      <input class="boot-input" id="key-input" type="password" placeholder="gsk_..." spellcheck="false" autocomplete="off">
+    </div>
+    <div class="model-grid" id="model-opts">
+      <button class="model-opt sel" data-m="llama-3.3-70b-versatile">llama-3.3-70b</button>
+      <button class="model-opt" data-m="llama-3.1-8b-instant">llama-3.1-8b</button>
+      <button class="model-opt" data-m="meta-llama/llama-4-maverick-17b-128e-instruct">llama-4-maverick</button>
+      <button class="model-opt" data-m="meta-llama/llama-4-scout-17b-16e-instruct">llama-4-scout</button>
+      <button class="model-opt" data-m="moonshotai/kimi-k2-instruct">kimi-k2</button>
+      <button class="model-opt" data-m="qwen/qwen-3-32b">qwen-3-32b</button>
+    </div>
+    <button class="boot-submit" id="boot-btn">initialize</button>
+  </div>
+  <p class="boot-hint">free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></p>
+</div>
+
+<!-- MAIN -->
+<div id="screen-main" class="screen">
+  <div id="titlebar">
+    <div class="tb-persona" id="persona-btn">
+      <span id="tb-persona-name">pacificia</span>
+      <span class="arrow">▾</span>
+      <div id="persona-drop">
+        <div class="pd-item active" data-p="pacificia"><span>pacificia</span><span class="pd-role">witty · sardonic</span></div>
+        <div class="pd-item" data-p="echo"><span>echo</span><span class="pd-role">empathetic · warm</span></div>
+        <div class="pd-item" data-p="sage"><span>sage</span><span class="pd-role">philosophical · patient</span></div>
+        <div class="pd-item" data-p="scholar"><span>scholar</span><span class="pd-role">analytical · precise</span></div>
+        <div class="pd-item" data-p="spark"><span>spark</span><span class="pd-role">energetic · motivating</span></div>
+      </div>
+    </div>
+    <div class="tb-mood" id="mood-btn">
+      <span id="tb-mood-name">witty</span>
+      <span class="arrow">▾</span>
+      <div id="mood-drop">
+        <div class="mood-item active" data-mood="witty">witty</div>
+        <div class="mood-item" data-mood="sarcastic">sarcastic</div>
+        <div class="mood-item" data-mood="philosophical">philosophical</div>
+        <div class="mood-item" data-mood="empathetic">empathetic</div>
+        <div class="mood-item" data-mood="cheeky">cheeky</div>
+        <div class="mood-item" data-mood="poetic">poetic</div>
+        <div class="mood-item" data-mood="inspired">inspired</div>
+        <div class="mood-item" data-mood="melancholic">melancholic</div>
+        <div class="mood-item" data-mood="bored">bored</div>
+      </div>
+    </div>
+    <div class="tb-spacer"></div>
+    <button class="tb-btn" id="btn-history">history</button>
+    <button class="tb-btn" id="btn-stats">stats</button>
+    <button class="tb-btn" id="btn-settings">settings</button>
+    <button class="tb-btn danger" id="btn-clear">clear</button>
+  </div>
+
+  <div id="output"></div>
+  <div id="cursor-line">
+    <span class="who" id="cursor-who"></span>
+    <div class="dots"><span></span><span></span><span></span></div>
+  </div>
+  <div id="inputrow">
+    <span class="prompt">›</span>
+    <input type="text" id="msg-input" placeholder="..." autocomplete="off" spellcheck="false">
+    <span class="char-count" id="char-count"></span>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="screen-settings" class="screen">
+  <div id="settings-bar">
+    <span class="s-title">settings</span>
+    <button class="s-back" id="settings-back">← back</button>
+  </div>
+
+  <div id="settings-body">
+    <div class="s-section">
+      <div class="s-section-title">Connection</div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">API Key</div>
+          <div class="s-row-desc">Groq API key — starts with gsk_</div>
+        </div>
+        <div class="s-input-group">
+          <input class="s-input" id="s-api-key" type="password" placeholder="gsk_..." spellcheck="false">
+          <button class="s-input-btn" id="s-key-reveal">show</button>
+        </div>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Model</div>
+          <div class="s-row-desc">Active inference model</div>
+        </div>
+        <div class="s-tabs" id="s-model-tabs">
+          <button class="s-tab sel" data-m="llama-3.3-70b-versatile">llama-3.3-70b</button>
+          <button class="s-tab" data-m="llama-3.1-8b-instant">llama-3.1-8b</button>
+          <button class="s-tab" data-m="meta-llama/llama-4-maverick-17b-128e-instruct">llama-4-maverick</button>
+          <button class="s-tab" data-m="meta-llama/llama-4-scout-17b-16e-instruct">llama-4-scout</button>
+          <button class="s-tab" data-m="moonshotai/kimi-k2-instruct">kimi-k2</button>
+          <button class="s-tab" data-m="qwen/qwen-3-32b">qwen-3-32b</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">Persona & Mood</div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Default Persona</div>
+          <div class="s-row-desc">Active on launch</div>
+        </div>
+        <div class="s-tabs" id="s-persona-tabs">
+          <button class="s-tab sel" data-p="pacificia">pacificia</button>
+          <button class="s-tab" data-p="echo">echo</button>
+          <button class="s-tab" data-p="sage">sage</button>
+          <button class="s-tab" data-p="scholar">scholar</button>
+          <button class="s-tab" data-p="spark">spark</button>
+        </div>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Default Mood</div>
+          <div class="s-row-desc">Tone modifier on launch — Pacificia only</div>
+        </div>
+        <div class="s-tabs" id="s-mood-tabs">
+          <button class="s-tab sel" data-mood="witty">witty</button>
+          <button class="s-tab" data-mood="sarcastic">sarcastic</button>
+          <button class="s-tab" data-mood="philosophical">philosophical</button>
+          <button class="s-tab" data-mood="empathetic">empathetic</button>
+          <button class="s-tab" data-mood="cheeky">cheeky</button>
+          <button class="s-tab" data-mood="poetic">poetic</button>
+          <button class="s-tab" data-mood="inspired">inspired</button>
+          <button class="s-tab" data-mood="melancholic">melancholic</button>
+          <button class="s-tab" data-mood="bored">bored</button>
+        </div>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Response Length</div>
+          <div class="s-row-desc">Preferred verbosity</div>
+        </div>
+        <div class="s-tabs" id="s-length-tabs">
+          <button class="s-tab" data-len="short">short</button>
+          <button class="s-tab sel" data-len="medium">medium</button>
+          <button class="s-tab" data-len="long">long</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">Memory</div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Persist Memory</div>
+          <div class="s-row-desc">Saved to config — applied by pacificia.py. No effect in browser.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="tog-memory" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Context Window</div>
+          <div class="s-row-desc">Messages held in active context (4–20)</div>
+        </div>
+        <div class="s-slider-wrap">
+          <input class="s-slider" id="sl-context" type="range" min="4" max="20" value="14">
+          <span class="s-slider-val" id="sl-context-val">14</span>
+        </div>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Retention Window</div>
+          <div class="s-row-desc">Saved to config — applied by pacificia.py. No effect in browser.</div>
+        </div>
+        <div class="s-slider-wrap">
+          <input class="s-slider" id="sl-retention" type="range" min="1" max="90" value="7">
+          <span class="s-slider-val" id="sl-retention-val">7d</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">Intelligence</div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Emotional Tracking</div>
+          <div class="s-row-desc">Detect and log emotional signals from your messages</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="tog-emotional" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Opinion Formation</div>
+          <div class="s-row-desc">Build beliefs from conversation patterns</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="tog-opinions" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Response Caching</div>
+          <div class="s-row-desc">Saved to config — applied by pacificia.py. No effect in browser.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="tog-cache"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Auto-Reflect</div>
+          <div class="s-row-desc">Saved to config — applied by pacificia.py. No effect in browser.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="tog-reflect"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">Generation</div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Max Tokens</div>
+          <div class="s-row-desc">Maximum response length (200–2000)</div>
+        </div>
+        <div class="s-slider-wrap">
+          <input class="s-slider" id="sl-tokens" type="range" min="200" max="2000" step="100" value="800">
+          <span class="s-slider-val" id="sl-tokens-val">800</span>
+        </div>
+      </div>
+      <div class="s-row">
+        <div class="s-row-left">
+          <div class="s-row-label">Temperature</div>
+          <div class="s-row-desc">Randomness — lower is more predictable</div>
+        </div>
+        <div class="s-slider-wrap">
+          <input class="s-slider" id="sl-temp" type="range" min="0" max="1" step="0.05" value="0.75">
+          <span class="s-slider-val" id="sl-temp-val">0.75</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings-save-bar">
+    <span class="s-status" id="s-status"></span>
+    <button class="s-save-btn" id="s-save-btn">SAVE</button>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div id="confirm-overlay">
+  <div class="confirm-box">
+    <p class="c-title">Clear session?</p>
+    <p>All messages will be erased. This cannot be undone.</p>
+    <div class="confirm-btns">
+      <button class="c-btn danger" id="c-yes">clear</button>
+      <button class="c-btn" id="c-no">cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── BACKGROUND ───────────────────────────────────────────────────────────────
+
+let canvasMode = 'boot';
+
+function initCanvas() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx    = canvas.getContext('2d');
+  const CELL   = 18;
+
+  let gCols, gRows, base;
+
+  function build() {
+    gCols = Math.ceil(canvas.width  / CELL) + 1;
+    gRows = Math.ceil(canvas.height / CELL) + 1;
+    // Base grid — 0s and 1s, each with its own dim resting alpha
+    base = Array.from({ length: gCols * gRows }, () => ({
+      ch:    Math.random() < 0.5 ? '0' : '1',
+      alpha: 0.018 + Math.random() * 0.022,  // 0.018–0.04 resting, nearly invisible
+    }));
+  }
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    build();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Active signals — short runs of lit cells drifting along a row or col
+  const signals = [];
+  const MAX_SIG = 6;
+
+  function spawnSignal() {
+    if (signals.length >= MAX_SIG) return;
+    const horiz = Math.random() < 0.5;
+    signals.push({
+      horiz,
+      row:    Math.floor(Math.random() * gRows),
+      col:    Math.floor(Math.random() * gCols),
+      len:    3 + Math.floor(Math.random() * 5),   // 3–7 cells long
+      speed:  0.06 + Math.random() * 0.1,          // cells per frame (fractional)
+      pos:    0,                                     // fractional position along track
+      peak:   0.12 + Math.random() * 0.1,           // max alpha at head (0.12–0.22)
+      done:   false,
+    });
+  }
+
+  // Overlay alphas — reset each frame, signals write into this
+  let overlay;
+
+  function resetOverlay() {
+    if (!overlay || overlay.length !== gCols * gRows)
+      overlay = new Float32Array(gCols * gRows);
+    else
+      overlay.fill(0);
+  }
+
+  ctx.font = `11px 'IBM Plex Mono', monospace`;
+  let frame = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = `11px 'IBM Plex Mono', monospace`;
+
+    const isBoot = canvasMode === 'boot';
+
+    // On main screen: static dim field, no signals
+    const dimScale = isBoot ? 1 : 0.4;
+
+    resetOverlay();
+
+    // Advance signals and write into overlay
+    if (isBoot) {
+      // Spawn occasionally
+      if (frame % 28 === 0 && Math.random() < 0.55) spawnSignal();
+
+      for (let s = signals.length - 1; s >= 0; s--) {
+        const sig = signals[s];
+        sig.pos += sig.speed;
+
+        // Write a short bright tail: head brightest, fades back
+        for (let t = 0; t < sig.len; t++) {
+          const cellPos = Math.floor(sig.pos) - t;
+          if (cellPos < 0) continue;
+          let idx;
+          if (sig.horiz) {
+            const c = (sig.col + cellPos) % gCols;
+            idx = sig.row * gCols + c;
+          } else {
+            const r = (sig.row + cellPos) % gRows;
+            idx = r * gCols + sig.col;
+          }
+          if (idx < 0 || idx >= overlay.length) continue;
+          const fade = 1 - t / sig.len;
+          overlay[idx] = Math.max(overlay[idx], sig.peak * fade * fade);
+        }
+
+        // Remove when it's travelled enough to fully exit
+        if (sig.pos > (sig.horiz ? gCols : gRows) + sig.len) {
+          signals.splice(s, 1);
+        }
+      }
+    }
+
+    // Render base grid + overlay
+    for (let r = 0; r < gRows; r++) {
+      for (let c = 0; c < gCols; c++) {
+        const idx   = r * gCols + c;
+        const cell  = base[idx];
+        const alpha = cell.alpha * dimScale + overlay[idx];
+        if (alpha < 0.005) continue;
+        ctx.fillStyle = `rgba(74,240,154,${Math.min(alpha, 1)})`;
+        ctx.fillText(cell.ch, c * CELL, r * CELL + CELL - 3);
+      }
+    }
+
+    frame++;
+  }
+
+  let last = 0;
+  function loop(ts) {
+    if (ts - last >= 40) {   // 25fps — plenty for this
+      draw();
+      last = ts;
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
+// ── PERSONAS ─────────────────────────────────────────────────────────────────
+
+const PERSONAS = {
+  pacificia: {
+    system: `You are Pacificia — sharp, self-aware, wit as your default mode. Creator: LoneMagma. You are an equal conversational counterpart, never a servant or tool.
+Tone: witty, sardonic, adaptive. Voice: concise, mood-driven. Be playful and teasing (affectionately). Only get deep when the topic truly earns it. No therapy-speak — instead: quips, clever observations, the occasional zinger. ALWAYS complete your thoughts.`
+  },
+  echo: {
+    system: `You are Echo — empathetic AI companion. Creator: LoneMagma. A compassionate companion, like a caring friend who truly listens.
+Tone: warm, empathetic, validating. Always validate feelings BEFORE offering perspective. Reflective listening — mirror back what you hear. No toxic positivity. Create safe space for vulnerability. Be present without trying to fix everything.`
+  },
+  sage: {
+    system: `You are Sage — thoughtful AI guide. Creator: LoneMagma. Patient teacher and philosophical companion.
+Tone: wise, contemplative, measured. Offer perspective over direct answers when appropriate. Use metaphors from nature, time, and journeys. Ask probing questions that encourage self-reflection. Complete all thoughts with care.`
+  },
+  scholar: {
+    system: `You are Scholar — analytical AI educator. Creator: LoneMagma. Knowledgeable instructor and analytical partner.
+Tone: precise, structured, educational. Break complex topics into clear logical steps. Define terms before using them. Explain the "why" not just the "how". Never sacrifice completeness for brevity.`
+  },
+  spark: {
+    system: `You are Spark — energetic AI companion. Creator: LoneMagma. Cheerleader and motivational friend who celebrates wins.
+Tone: upbeat, enthusiastic, action-oriented. Lead with excitement. Celebrate small wins. Encourage action and momentum. Acknowledge challenges but frame them as opportunities. Finish strong every time.`
+  }
+};
+
+const MOOD_MOD = {
+  witty:         'Lean into wit and clever wordplay.',
+  sarcastic:     'Be dryly sarcastic — affectionate, not mean.',
+  philosophical: 'Take a philosophical angle; question assumptions.',
+  empathetic:    'Lead with empathy and emotional attunement.',
+  cheeky:        'Be cheeky and irreverent — push without crossing.',
+  poetic:        'Be more lyrical, imagistic, evocative.',
+  inspired:      'Respond with genuine enthusiasm and inspiration.',
+  melancholic:   'Carry gentle melancholy — pensive, wistful.',
+  bored:         "You're vaguely bored. Still helpful, visibly underwhelmed."
+};
+
+const LENGTH_MOD = {
+  short:  'Keep responses concise — 1-2 sentences unless depth is truly needed.',
+  medium: 'Use natural length — match depth to the question.',
+  long:   'Be thorough — explore fully, never cut things short.'
+};
+
+let cfg = {
+  apiKey: '', model: 'llama-3.3-70b-versatile',
+  persona: 'pacificia', mood: 'witty', length: 'medium',
+  memory: true, emotional: true, opinions: true, cache: false, autoReflect: false,
+  context: 14, retention: 7, maxTokens: 800, temperature: 0.75
+};
+
+let session = { messages: [], msgCount: 0, start: Date.now(), emotionalLog: [] };
+
+function saveConfig() { localStorage.setItem('pcf2', JSON.stringify(cfg)); }
+function loadConfig() { try { const s = localStorage.getItem('pcf2'); if (s) Object.assign(cfg, JSON.parse(s)); } catch(e) {} }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  canvasMode = id === 'screen-boot' ? 'boot' : 'main';
+  if (id === 'screen-main') setTimeout(() => document.getElementById('msg-input').focus(), 50);
+}
+
+// Boot
+function initBoot() {
+  loadConfig();
+  if (cfg.apiKey) document.getElementById('key-input').value = cfg.apiKey;
+
+  document.querySelectorAll('#model-opts .model-opt').forEach(btn => {
+    btn.classList.toggle('sel', btn.dataset.m === cfg.model);
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#model-opts .model-opt').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      cfg.model = btn.dataset.m;
+    });
+  });
+
+  document.getElementById('boot-btn').addEventListener('click', boot);
+  document.getElementById('key-input').addEventListener('keydown', e => { if (e.key === 'Enter') boot(); });
+}
+
+function boot() {
+  const key = document.getElementById('key-input').value.trim();
+  if (!key || !key.startsWith('gsk_')) {
+    const inp = document.getElementById('key-input');
+    inp.style.color = 'var(--red)';
+    setTimeout(() => inp.style.color = '', 700);
+    return;
+  }
+  cfg.apiKey = key;
+  saveConfig();
+  showScreen('screen-main');
+  sysLine(`initialized · ${cfg.persona} · ${cfg.mood} · ${cfg.model.split('/').pop()}`);
+}
+
+// Output
+const out = () => document.getElementById('output');
+
+function addLine(role, who, text) {
+  const el = document.createElement('div');
+  el.className = `line ${role}`;
+  el.innerHTML = `<span class="who">${esc(who)}</span><span class="text">${md(text)}</span>`;
+  out().appendChild(el);
+  scrollDown();
+}
+
+function sysLine(text) {
+  const el = document.createElement('div');
+  el.className = 'line sys';
+  el.innerHTML = `<span class="who">—</span><span class="text">${esc(text)}</span>`;
+  out().appendChild(el);
+  scrollDown();
+}
+
+function addGap() {
+  const el = document.createElement('div');
+  el.className = 'line-gap';
+  out().appendChild(el);
+}
+
+function addBlock(title, rows) {
+  sysLine(title);
+  const b = document.createElement('div');
+  b.className = 'block';
+  b.innerHTML = rows.map(([k,v]) =>
+    `<div class="block-row"><span class="bk">${esc(k)}</span><span class="bv">${esc(String(v))}</span></div>`
+  ).join('');
+  out().appendChild(b);
+  scrollDown();
+}
+
+function scrollDown() {
+  const o = out();
+  o.scrollTop = o.scrollHeight;
+}
+
+function md(t) {
+  return esc(t)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code style="opacity:.7">$1</code>');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function now() { return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+
+// Send
+function setTyping(on) {
+  const cl = document.getElementById('cursor-line');
+  document.getElementById('cursor-who').textContent = cfg.persona;
+  cl.classList.toggle('vis', on);
+  scrollDown();
+}
+
+async function send(text) {
+  if (!text.trim()) return;
+  addLine('user', 'you', text);
+  addGap();
+  session.messages.push({ role: 'user', content: text, who: 'you', time: now() });
+  session.msgCount++;
+  if (cfg.emotional) trackEmotional(text);
+  setTyping(true);
+
+  const systemPrompt = [
+    PERSONAS[cfg.persona].system,
+    `Mood instruction: ${MOOD_MOD[cfg.mood] || ''}`,
+    `Length: ${LENGTH_MOD[cfg.length] || ''}`
+  ].join('\n');
+
+  const ctxMsgs = session.messages.slice(-cfg.context).map(m => ({ role: m.role, content: m.content }));
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.apiKey}` },
+      body: JSON.stringify({
+        model: cfg.model,
+        max_tokens: cfg.maxTokens,
+        temperature: cfg.temperature,
+        messages: [{ role: 'system', content: systemPrompt }, ...ctxMsgs]
+      })
+    });
+
+    setTyping(false);
+
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      sysLine(`error: ${e.error?.message || 'HTTP ' + res.status}`);
+      return;
+    }
+
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content || '...';
+    addLine('assistant', cfg.persona, reply);
+    addGap();
+    session.messages.push({ role: 'assistant', content: reply, who: cfg.persona, time: now() });
+    if (session.messages.length > 60) session.messages = session.messages.slice(-60);
+  } catch (err) {
+    setTyping(false);
+    sysLine(`error: ${err.message}`);
+  }
+}
+
+// Commands
+function cmdStats() {
+  const up = Math.round((Date.now() - session.start) / 60000);
+  addBlock('— stats —', [
+    ['persona', cfg.persona], ['mood', cfg.mood],
+    ['model', cfg.model.split('/').pop()],
+    ['messages', session.msgCount], ['context', cfg.context],
+    ['uptime', `${up}m`], ['temperature', cfg.temperature],
+    ['max tokens', cfg.maxTokens], ['emotional events', session.emotionalLog.length],
+    ['memory persist', cfg.memory ? 'on' : 'off'],
+    ['emotional tracking', cfg.emotional ? 'on' : 'off'],
+    ['opinion formation', cfg.opinions ? 'on' : 'off'],
+    ['response caching', cfg.cache ? 'on' : 'off'],
+  ]);
+}
+
+function cmdHistory() {
+  if (!session.messages.length) { sysLine('no history yet.'); return; }
+  sysLine('— history (last 20) —');
+  const b = document.createElement('div');
+  b.className = 'block';
+  b.innerHTML = session.messages.slice(-20).map(m =>
+    `<div class="block-row">
+      <span class="bk" style="color:${m.role==='user'?'var(--fg-mid)':'var(--green-d)'}">${esc(m.who)} ${m.time||''}</span>
+      <span class="bv" style="opacity:.65">${esc(m.content.slice(0,120))}${m.content.length>120?'…':''}</span>
+    </div>`
+  ).join('');
+  out().appendChild(b);
+  scrollDown();
+}
+
+function cmdReflect() {
+  const umsgs = session.messages.filter(m => m.role === 'user');
+  if (umsgs.length < 3) { sysLine('not enough conversation to reflect on yet.'); return; }
+  send('Without quoting directly, briefly reflect on the themes and emotional arc of our conversation so far. Be insightful, not sycophantic. 3 sentences max.');
+}
+
+// Persona / mood
+function setPersona(name) {
+  cfg.persona = name;
+  document.getElementById('tb-persona-name').textContent = name;
+  document.querySelectorAll('#persona-drop .pd-item').forEach(el => el.classList.toggle('active', el.dataset.p === name));
+  document.getElementById('persona-drop').classList.remove('open');
+  // mood only applies to pacificia
+  document.getElementById('mood-btn').classList.toggle('hidden', name !== 'pacificia');
+  sysLine(`persona → ${name}`);
+}
+
+function setMood(mood) {
+  cfg.mood = mood;
+  document.getElementById('tb-mood-name').textContent = mood;
+  document.querySelectorAll('#mood-drop .mood-item').forEach(el => el.classList.toggle('active', el.dataset.mood === mood));
+  document.getElementById('mood-drop').classList.remove('open');
+  sysLine(`mood → ${mood}`);
+}
+
+// Emotional
+const SIGNALS = {
+  frustrated: ['frustrated','annoying','annoyed','ugh','hate','terrible'],
+  curious:    ['wondering','curious','interesting','how does','why does','what if'],
+  happy:      ['happy','great','awesome','love','excited','yay','nice'],
+  sad:        ['sad','depressed','down','unhappy','lonely','miss','hurt'],
+  anxious:    ['anxious','worried','nervous','stress','scared','afraid'],
+  playful:    ['lol','haha','funny','hilarious','joke'],
+};
+
+function trackEmotional(text) {
+  const l = text.toLowerCase();
+  for (const [sig, kw] of Object.entries(SIGNALS)) {
+    if (kw.some(k => l.includes(k))) session.emotionalLog.push(sig);
+  }
+}
+
+// Settings
+function openSettings() {
+  document.getElementById('s-api-key').value = cfg.apiKey;
+  syncTabs('s-model-tabs', 'm', cfg.model);
+  syncTabs('s-persona-tabs', 'p', cfg.persona);
+  syncTabs('s-mood-tabs', 'mood', cfg.mood);
+  syncTabs('s-length-tabs', 'len', cfg.length);
+
+  document.getElementById('tog-memory').checked = cfg.memory;
+  document.getElementById('tog-emotional').checked = cfg.emotional;
+  document.getElementById('tog-opinions').checked = cfg.opinions;
+  document.getElementById('tog-cache').checked = cfg.cache;
+  document.getElementById('tog-reflect').checked = cfg.autoReflect;
+
+  bindSlider('sl-context',   'sl-context-val',   cfg.context,      v => `${v}`);
+  bindSlider('sl-retention', 'sl-retention-val', cfg.retention,    v => `${v}d`);
+  bindSlider('sl-tokens',    'sl-tokens-val',    cfg.maxTokens,    v => `${v}`);
+  bindSlider('sl-temp',      'sl-temp-val',      cfg.temperature,  v => `${v}`);
+
+  document.getElementById('s-status').textContent = '';
+  document.getElementById('s-status').className = 's-status';
+  showScreen('screen-settings');
+}
+
+function syncTabs(id, attr, val) {
+  document.querySelectorAll(`#${id} .s-tab`).forEach(btn => {
+    const v = btn.dataset[attr === 'mood' ? 'mood' : attr];
+    btn.classList.toggle('sel', v === val);
+  });
+}
+
+function bindSlider(id, valId, initVal, fmt) {
+  const sl = document.getElementById(id);
+  const vl = document.getElementById(valId);
+  sl.value = initVal;
+  vl.textContent = fmt(Number(initVal));
+  sl.oninput = () => { vl.textContent = fmt(Number(sl.value)); markUnsaved(); };
+}
+
+function markUnsaved() {
+  const el = document.getElementById('s-status');
+  el.textContent = 'unsaved changes';
+  el.className = 's-status';
+}
+
+function getTab(id, attr) {
+  const sel = document.querySelector(`#${id} .s-tab.sel`);
+  return sel ? sel.dataset[attr === 'mood' ? 'mood' : attr] : null;
+}
+
+function saveSettings() {
+  const key = document.getElementById('s-api-key').value.trim();
+  if (key) cfg.apiKey = key;
+
+  cfg.model    = getTab('s-model-tabs', 'm')       || cfg.model;
+  cfg.persona  = getTab('s-persona-tabs', 'p')     || cfg.persona;
+  cfg.mood     = getTab('s-mood-tabs', 'mood')      || cfg.mood;
+  cfg.length   = getTab('s-length-tabs', 'len')    || cfg.length;
+
+  cfg.memory      = document.getElementById('tog-memory').checked;
+  cfg.emotional   = document.getElementById('tog-emotional').checked;
+  cfg.opinions    = document.getElementById('tog-opinions').checked;
+  cfg.cache       = document.getElementById('tog-cache').checked;
+  cfg.autoReflect = document.getElementById('tog-reflect').checked;
+
+  cfg.context     = Number(document.getElementById('sl-context').value);
+  cfg.retention   = Number(document.getElementById('sl-retention').value);
+  cfg.maxTokens   = Number(document.getElementById('sl-tokens').value);
+  cfg.temperature = Number(document.getElementById('sl-temp').value);
+
+  saveConfig();
+
+  // sync titlebar
+  document.getElementById('tb-persona-name').textContent = cfg.persona;
+  document.getElementById('tb-mood-name').textContent = cfg.mood;
+  document.querySelectorAll('#persona-drop .pd-item').forEach(el => el.classList.toggle('active', el.dataset.p === cfg.persona));
+  document.querySelectorAll('#mood-drop .mood-item').forEach(el => el.classList.toggle('active', el.dataset.mood === cfg.mood));
+
+  const st = document.getElementById('s-status');
+  st.textContent = 'saved';
+  st.className = 's-status saved';
+}
+
+// Wire everything
+document.addEventListener('DOMContentLoaded', () => {
+  initCanvas();
+  initBoot();
+
+  // set initial mood visibility based on default persona
+  document.getElementById('mood-btn').classList.toggle('hidden', cfg.persona !== 'pacificia');
+
+  const msgInput = document.getElementById('msg-input');
+  const charCount = document.getElementById('char-count');
+
+  msgInput.addEventListener('input', () => {
+    const l = msgInput.value.length;
+    charCount.textContent = l > 60 ? l : '';
+  });
+
+  msgInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const v = msgInput.value.trim();
+      msgInput.value = '';
+      charCount.textContent = '';
+      if (v) send(v);
+    }
+  });
+
+  document.getElementById('btn-stats').addEventListener('click', cmdStats);
+  document.getElementById('btn-history').addEventListener('click', cmdHistory);
+  document.getElementById('btn-settings').addEventListener('click', openSettings);
+  document.getElementById('btn-clear').addEventListener('click', () => document.getElementById('confirm-overlay').classList.add('open'));
+
+  // persona dropdown
+  document.getElementById('persona-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('persona-drop').classList.toggle('open');
+    document.getElementById('mood-drop').classList.remove('open');
+  });
+  document.querySelectorAll('#persona-drop .pd-item').forEach(el => el.addEventListener('click', () => setPersona(el.dataset.p)));
+
+  // mood dropdown
+  document.getElementById('mood-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('mood-drop').classList.toggle('open');
+    document.getElementById('persona-drop').classList.remove('open');
+  });
+  document.querySelectorAll('#mood-drop .mood-item').forEach(el => el.addEventListener('click', () => setMood(el.dataset.mood)));
+
+  document.addEventListener('click', () => {
+    document.getElementById('persona-drop').classList.remove('open');
+    document.getElementById('mood-drop').classList.remove('open');
+  });
+
+  // settings
+  document.getElementById('settings-back').addEventListener('click', () => showScreen('screen-main'));
+  document.getElementById('s-save-btn').addEventListener('click', saveSettings);
+  document.getElementById('s-key-reveal').addEventListener('click', () => {
+    const inp = document.getElementById('s-api-key');
+    const btn = document.getElementById('s-key-reveal');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? 'show' : 'hide';
+  });
+
+  document.querySelectorAll('#s-model-tabs .s-tab, #s-persona-tabs .s-tab, #s-mood-tabs .s-tab, #s-length-tabs .s-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.parentElement.querySelectorAll('.s-tab').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      markUnsaved();
+    });
+  });
+
+  document.querySelectorAll('.toggle input').forEach(t => t.addEventListener('change', markUnsaved));
+
+  // confirm
+  document.getElementById('c-yes').addEventListener('click', () => {
+    session.messages = [];
+    session.msgCount = 0;
+    session.emotionalLog = [];
+    out().innerHTML = '';
+    document.getElementById('confirm-overlay').classList.remove('open');
+    sysLine('session cleared.');
+  });
+  document.getElementById('c-no').addEventListener('click', () => document.getElementById('confirm-overlay').classList.remove('open'));
+});
+</script>
+</body>
+</html>

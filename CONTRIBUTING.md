@@ -1,49 +1,32 @@
 # Contributing to Pacificia
 
-Thank you for your interest in contributing.
+Thanks for your interest. Pacificia is a personal project — contributions are welcome but the scope is intentionally narrow.
 
-## How to Contribute
+## What fits
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/name`
-3. Make your changes
-4. Test thoroughly
-5. Commit: `git commit -m 'Add feature'`
-6. Push: `git push origin feature/name`
-7. Open a Pull Request
+- Bug fixes in `pacificia.py`
+- New persona files (`identity_*.json`)
+- Improvements to setup scripts (`setup.sh`, `setup.bat`)
+- UI fixes for `pacificia_ui.html`
 
-## Code Guidelines
+## What doesn't fit
 
-- Follow PEP 8 style guidelines
-- Add comments for complex logic
-- Update README for new features
-- Test changes before submitting
+Pacificia is a terminal companion with persistent memory and multiple personas. It is not a general-purpose assistant, productivity tool, or platform. Feature requests that add capabilities outside that scope will be closed.
 
-## Reporting Issues
+## How to contribute
 
-Include:
-- Clear description
-- Steps to reproduce
-- Expected vs actual behavior
-- Environment details (OS, Python version)
+1. Fork the repo
+2. Create a branch: `git checkout -b fix/your-fix`
+3. Make your change
+4. Test it locally with a valid Groq API key
+5. Open a pull request with a clear description
 
-## Development Setup
+## Adding a persona
 
-```bash
-git clone https://github.com/LoneMagma/pacificia.git
-cd pacificia
-python3 -m venv env
-source env/bin/activate
-pip install -r requirements.txt
-```
+Copy any `identity_*.json`, rename it `identity_yourname.json`, and edit the fields. The filename must match the persona name (lowercase). Add the name to the persona loader in `pacificia.py`.
 
-## Testing
+## Code style
 
-Test your changes with:
-- Different moods
-- Various command sequences
-- Edge cases (empty input, long messages, etc.)
-
-## Questions
-
-Open an issue or start a discussion on GitHub.
+- No new dependencies without discussion
+- Keep `pacificia.py` as a single file
+- Match the existing tone in identity files — read the others before writing one

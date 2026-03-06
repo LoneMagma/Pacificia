@@ -1,250 +1,170 @@
-# Pacificia
+<div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://claude.ai/chat/LICENSE) [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) [![Powered by Groq](https://img.shields.io/badge/Powered%20by-Groq-orange.svg)](https://groq.com/) [![AI Assisted](https://img.shields.io/badge/Built%20with-AI-purple.svg)](https://github.com/LoneMagma/Pacificia)
+![Pacificia](./banner.svg)
 
-A conversational AI with persistent memory, adaptive personality, and emotional intelligence.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](./LICENSE)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-3572A5?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![Powered by Groq](https://img.shields.io/badge/Powered%20by-Groq-F55036?style=flat-square)](https://groq.com/)
+[![Browser Ready](https://img.shields.io/badge/browser-no%20install-4af09a?style=flat-square)](#browser--no-install)
 
----
-
-## Features
-
-- **9 Distinct Moods** - Witty, sarcastic, philosophical, empathetic, cheeky, poetic, inspired, melancholic, bored
-- **Cross-Session Memory** - Remembers conversations beyond single sessions
-- **Opinion Formation** - Develops beliefs based on interactions with confidence scoring
-- **Emotional Intelligence** - Tracks and responds to emotional patterns over time
-- **Conversation Threading** - Maintains context and callbacks to memorable moments
-- **Multi-Persona Support** - Switch between different AI personalities on the fly
-- **Response Caching** - Optimized performance for common queries
+</div>
 
 ---
 
-## Quick Installation
-
-### Linux / Mac / WSL
-
-```bash
-git clone https://github.com/LoneMagma/Pacificia.git && cd Pacificia && chmod +x setup.sh && ./setup.sh
-```
-
-### Windows (Command Prompt)
-
-```cmd
-git clone https://github.com/LoneMagma/Pacificia.git && cd Pacificia && setup.bat
-```
-
-### Windows (PowerShell)
-
-```powershell
-git clone https://github.com/LoneMagma/Pacificia.git; cd Pacificia; .\setup.bat
-```
-
-**Note**: You'll need a free Groq API key from [console.groq.com/keys](https://console.groq.com/keys)
+A terminal-based AI companion with persistent memory, adaptive mood, and five distinct personas. Not a productivity tool — a presence.
 
 ---
 
-## Running Pacificia
+## Two ways to run
 
-### Linux / Mac
+### Browser — no install
 
+Download [`pacificia_ui.html`](./pacificia_ui.html), open it in any browser, enter your Groq API key. That's it. No Python, no terminal, no setup.
+
+Get a free key at [console.groq.com/keys](https://console.groq.com/keys).
+
+---
+
+### Terminal
+
+**Windows** — double-click `Pacificia.bat`. First run sets everything up automatically.
+
+**Linux / Mac** — run once, then re-run any time:
 ```bash
-./run_pacificia.sh
+chmod +x Pacificia.sh && ./Pacificia.sh
 ```
 
-### Windows
-
-```cmd
-python pacificia.py
-```
-
-### Manual Activation (All Platforms)
-
+**Manual setup:**
 ```bash
-# Activate environment
-source env/bin/activate      # Linux/Mac
-env\Scripts\activate         # Windows
-
-# Run
-python pacificia.py
+git clone https://github.com/LoneMagma/Pacificia.git
+cd Pacificia
+cp .env.example .env        # then add your GROQ_API_KEY
+chmod +x setup.sh && ./setup.sh
 ```
 
-### Global Command (Optional - Linux/Mac)
+---
 
-Add to `~/.bashrc` or `~/.zshrc`:
+## Personas
 
-```bash
-alias pacificia='~/path/to/pacificia/run_pacificia.sh'
+Five distinct personalities. Switch mid-session with `/persona <n>`.
+
+| | Persona | Tone | Best for |
+|---|---|---|---|
+| 🟢 | **pacificia** | Witty, sardonic, adaptive | Default — sharp and honest |
+| 🔵 | **echo** | Warm, empathetic, validating | Processing feelings, being heard |
+| 🟡 | **sage** | Philosophical, patient, metaphorical | Perspective, big questions |
+| 🟠 | **scholar** | Analytical, precise, structured | Explanations, deep dives |
+| ⚡ | **spark** | Energetic, motivating, enthusiastic | Getting unstuck, momentum |
+
+Persona files live in `personas/`. Add your own by copying any `identity_*.json`.
+
+---
+
+## Moods
+
+Moods apply to **Pacificia only** — the others have fixed tonal identities.
+
+```
+witty  ·  sarcastic  ·  philosophical  ·  empathetic  ·  cheeky
+poetic  ·  inspired  ·  melancholic  ·  bored
 ```
 
-Then reload: `source ~/.bashrc`
+Switch with `/mood <n>`.
 
 ---
 
 ## Commands
 
-### Core Commands
-
-|Command|Description|
-|---|---|
-|`/help`|Show all available commands|
-|`/stats`|Display session statistics and metrics|
-|`/history`|View recent conversation log|
-|`/opinions`|View formed beliefs and stances|
-|`/emotional`|Analyze emotional patterns|
-|`/clear`|Clear session memory|
-|`/reflect`|Deep reflection on conversation journey|
-
-### Persona Management
-
-|Command|Description|
-|---|---|
-|`/personas`|List all available personas|
-|`/persona <name>`|Switch to different persona|
-
-Available personas: `pacificia`, `sage`, `spark`, `echo`, `scholar`
-
-### Preferences
-
-|Command|Description|
-|---|---|
-|`/setpref mood <value>`|Set default mood|
-|`/setpref length <value>`|Set response length (short/medium/long)|
-|`/getpref`|View current settings|
-
-### Available Moods
-
-`witty`, `sarcastic`, `philosophical`, `empathetic`, `cheeky`, `poetic`, `inspired`, `melancholic`, `bored`
-
----
-
-## Configuration
-
-### API Key Setup
-
-Create a `.env` file in the project root:
-
-```env
-GROQ_API_KEY=your_key_here
+```
+/help              show all commands
+/persona <n>       switch active persona
+/mood <n>          change Pacificia's mood (Pacificia only)
+/stats             session statistics
+/history           recent conversation log
+/opinions          views formed this session
+/emotional         emotional pattern summary
+/reflect           session reflection and summary
+/clear             wipe session history
 ```
 
-### Personality Customization
+---
 
-Edit `identity.json` or create new persona files in the `personas/` directory to customize:
+## Features
 
-- Personality traits
-- Response style
-- Philosophical outlook
-- Behavioral patterns
+- **Persistent memory** — local SQLite, survives restarts, pruned by size not time
+- **Opinion formation** — builds views over time with confidence scoring
+- **Emotional tracking** — detects and responds to emotional patterns
+- **Context threading** — callbacks to earlier moments in conversation
+- **6 models** — switch between Groq models in settings
+- **Browser UI** — full standalone HTML, no server, no install
 
 ---
 
-## Architecture
-
-### Memory System
-
-- **Short-term** - Last 8 exchanges in active context
-- **Cross-session** - Loads memorable moments from previous sessions
-- **Long-term** - Summarizes sessions and extracts key topics
-- **Auto-cleanup** - Removes data older than 7 days
-
-### Intelligence Features
-
-- Local sentiment analysis (no API overhead)
-- Opinion formation with confidence scoring
-- Emotional pattern tracking over 24 hours
-- Response caching for common queries
-- Memorable phrase tracking and callbacks
-
-### API Optimization
-
-- Smart rate limiting (30 calls/minute)
-- Automatic retry on truncated responses
-- Dynamic token allocation based on query complexity
-- Cached responses for repeated queries
-
----
-
-## Development
-
-### Setup Development Environment
-
-```bash
-python3 -m venv env
-source env/bin/activate      # Linux/Mac
-env\Scripts\activate         # Windows
-pip install -r requirements.txt
-python pacificia.py
-```
-
-### Requirements
-
-- **Python** 3.8 or higher
-- **Dependencies**: `rich`, `requests`, `python-dotenv`, `pyfiglet`
-- **API**: Groq API key (free tier available)
-
-### Project Structure
+## Project structure
 
 ```
 Pacificia/
-├── pacificia.py           # Main application
-├── identity.json          # Default persona configuration
-├── personas/              # Additional persona files
-├── requirements.txt       # Python dependencies
-├── setup.sh              # Linux/Mac setup script
-├── setup.bat             # Windows setup script
-├── run_pacificia.sh      # Linux/Mac run script
-└── .env                  # API keys (create this)
+├── pacificia.py           # Terminal application
+├── pacificia_ui.html      # Browser UI — open and run
+│
+├── personas/
+│   ├── identity_pacificia.json
+│   ├── identity_echo.json
+│   ├── identity_sage.json
+│   ├── identity_scholar.json
+│   └── identity_spark.json
+│
+├── Pacificia.bat          # Windows launcher
+├── Pacificia.sh           # Linux/Mac launcher
+├── setup.bat / setup.sh   # First-run setup
+│
+├── .env.example           # Environment template
+├── requirements.txt       # Python deps
+├── GUIDE.md               # Customization reference
+└── LICENSE
 ```
 
 ---
 
-## Platform Support
+## Requirements
 
-|Platform|Status|Notes|
-|---|---|---|
-|Linux|Fully Supported|Native environment|
-|macOS|Fully Supported|Native environment|
-|Windows 10/11|Supported|Use Command Prompt or PowerShell|
-|WSL|Fully Supported|Recommended for Windows users|
-
-**Windows Users**: The project uses `pathlib` for cross-platform compatibility. All core features work on Windows, though shell scripts (`.sh` files) are Linux/Mac only.
+- Python 3.8+ *(terminal only — browser UI needs nothing)*
+- A free [Groq API key](https://console.groq.com/keys)
+- `rich` `requests` `python-dotenv` `pyfiglet`
 
 ---
 
-## Credits
+## Platform support
 
-**Created by**: LoneMagma, Powered by AI
-
-**Built with**:
-
-- [Groq](https://groq.com/) - Fast LLM inference
-- [Rich](https://github.com/Textualize/rich) - Terminal formatting
-- Claude (Anthropic), Grok 4.1, GPT-4o, and Venice AI - Development assistance
-
-This project was developed with heavy assistance from AI tools, demonstrating the collaborative potential between human creativity and artificial intelligence.
-
----
-
-## License
-
-MIT License - see [LICENSE](https://claude.ai/chat/LICENSE) file for details
-
----
-
-## Support
-
-- **Issues**: [Open an issue on GitHub](https://github.com/LoneMagma/Pacificia/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/LoneMagma/Pacificia/discussions)
+| Platform | Status |
+|---|---|
+| Linux | ✓ |
+| macOS | ✓ |
+| Windows 10/11 | ✓ |
+| WSL | ✓ |
+| Any browser | ✓ |
 
 ---
 
 ## Notes
 
-- Keep your API key secure - never commit `.env` to version control
-- Free Groq tier has a 30 requests/minute limit
-- All data is stored locally in SQLite database
-- Database automatically cleans up data older than 7 days
-- Memory and conversations persist across sessions
+- `.env` is gitignored — never commit your API key
+- Free Groq tier: ~30 requests/minute
+- All data stored locally — nothing leaves your machine
+- Browser UI: sessions are in-memory only, settings persist via `localStorage`
 
 ---
 
-**Hope you enjoy conversing with Pacificia.**
+## Credits
+
+Created by **[LoneMagma](https://github.com/LoneMagma)**
+
+Built with [Groq](https://groq.com/) · [Rich](https://github.com/Textualize/rich) · [pyfiglet](https://github.com/pwaller/pyfiglet)
+
+Developed with Claude, GPT-4o, and Grok.
+
+---
+
+<div align="center">
+<sub>MIT License — see <a href="./LICENSE">LICENSE</a></sub>
+</div>
