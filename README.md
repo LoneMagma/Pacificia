@@ -1,6 +1,8 @@
 <div align="center">
 
-![Pacificia](./banner.svg)
+<img src="./banner.svg" alt="Pacificia" width="800"/>
+
+<br/>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](./LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-3572A5?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
@@ -95,6 +97,7 @@ Switch with `/mood <n>`.
 - **Opinion formation** — builds views over time with confidence scoring
 - **Emotional tracking** — detects and responds to emotional patterns
 - **Context threading** — callbacks to earlier moments in conversation
+- **Streaming responses** — tokens arrive in real time, not all at once
 - **6 models** — switch between Groq models in settings
 - **Browser UI** — full standalone HTML, no server, no install
 
@@ -106,6 +109,7 @@ Switch with `/mood <n>`.
 Pacificia/
 ├── pacificia.py           # Terminal application
 ├── pacificia_ui.html      # Browser UI — open and run
+├── banner.svg             # Animated README banner
 │
 ├── personas/
 │   ├── identity_pacificia.json

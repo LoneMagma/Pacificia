@@ -869,24 +869,63 @@ async function send(text) {
         model: cfg.model,
         max_tokens: cfg.maxTokens,
         temperature: cfg.temperature,
+        stream: true,
         messages: [{ role: 'system', content: systemPrompt }, ...ctxMsgs]
       })
     });
 
-    setTyping(false);
-
     if (!res.ok) {
+      setTyping(false);
       const e = await res.json().catch(() => ({}));
-      sysLine(`error: ${e.error?.message || 'HTTP ' + res.status}`);
+      sysLine(`error: ${e.error?.message || res.status + ' — check your API key or model'}`);
       return;
     }
 
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || '...';
-    addLine('assistant', cfg.persona, reply);
+    // Create the reply element upfront — tokens stream into it
+    const el = document.createElement('div');
+    el.className = 'line assistant';
+    el.innerHTML = `<span class="who">${esc(cfg.persona)}</span><span class="text stream-text"></span>`;
+    out().appendChild(el);
+    const textEl = el.querySelector('.stream-text');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = '';
+    let firstToken = true;
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop(); // keep incomplete last line in buffer
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') break;
+        try {
+          const chunk = JSON.parse(raw);
+          const token = chunk.choices?.[0]?.delta?.content;
+          if (!token) continue;
+          if (firstToken) { setTyping(false); firstToken = false; }
+          full += token;
+          // Render markdown on the accumulated text so far
+          textEl.innerHTML = md(full);
+          scrollDown();
+          // Slight delay so tokens land at reading pace, not fire-hose
+          await new Promise(r => setTimeout(r, 18));
+        } catch { /* partial JSON, skip */ }
+      }
+    }
+
+    setTyping(false);
     addGap();
-    session.messages.push({ role: 'assistant', content: reply, who: cfg.persona, time: now() });
+    session.messages.push({ role: 'assistant', content: full, who: cfg.persona, time: now() });
     if (session.messages.length > 60) session.messages = session.messages.slice(-60);
+
   } catch (err) {
     setTyping(false);
     sysLine(`error: ${err.message}`);
